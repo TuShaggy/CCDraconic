@@ -1,79 +1,100 @@
-
--- peripheral identification
---
-function periphSearch(type)
-   local names = peripheral.getNames()
-   local i, name
-   for i, name in pairs(names) do
-      if peripheral.getType(name) == type then
-         return peripheral.wrap(name)
-      end
-   end
-   return null
+-- lib/ui.lua — utilidades de UI para monitores/terminales CC:Tweaked
+function ui.pickLargestMonitor()
+local best, bestArea = nil, -1
+for _, name in ipairs(peripheral.getNames()) do
+if peripheral.getType(name) == "monitor" then
+local mon = peripheral.wrap(name)
+if mon then
+local w, h = mon.getSize()
+local area = (w or 0) * (h or 0)
+if area > bestArea then
+best, bestArea = mon, area
 end
-
--- formatting
-
-function format_int(number)
-
-	if number == nil then number = 0 end
-
-  local i, j, minus, int, fraction = tostring(number):find('([-]?)(%d+)([.]?%d*)')
-  -- reverse the int-string and append a comma to all blocks of 3 digits
-  int = int:reverse():gsub("(%d%d%d)", "%1,")
-
-  -- reverse the int-string back remove an optional comma and put the
-  -- optional minus and fractional part back
-  return minus .. int:reverse():gsub("^,", "") .. fraction
 end
-
--- monitor related
-
---display text text on monitor, "mon" peripheral
-function draw_text(mon, x, y, text, text_color, bg_color)
-  mon.monitor.setBackgroundColor(bg_color)
-  mon.monitor.setTextColor(text_color)
-  mon.monitor.setCursorPos(x,y)
-  mon.monitor.write(text)
 end
-
-function draw_text_right(mon, offset, y, text, text_color, bg_color)
-  mon.monitor.setBackgroundColor(bg_color)
-  mon.monitor.setTextColor(text_color)
-  mon.monitor.setCursorPos(mon.X-string.len(tostring(text))-offset,y)
-  mon.monitor.write(text)
 end
-
-function draw_text_lr(mon, x, y, offset, text1, text2, text1_color, text2_color, bg_color)
-	draw_text(mon, x, y, text1, text1_color, bg_color)
-	draw_text_right(mon, offset, y, text2, text2_color, bg_color)
-end
-
---draw line on computer terminal
-function draw_line(mon, x, y, length, color)
-    if length < 0 then
-      length = 0
-    end
-    mon.monitor.setBackgroundColor(color)
-    mon.monitor.setCursorPos(x,y)
-    mon.monitor.write(string.rep(" ", length))
-end
-
---create progress bar
---draws two overlapping lines
---background line of bg_color
---main line of bar_color as a percentage of minVal/maxVal
-function progress_bar(mon, x, y, length, minVal, maxVal, bar_color, bg_color)
-  draw_line(mon, x, y, length, bg_color) --backgoround bar
-  local barSize = math.floor((minVal/maxVal) * length)
-  draw_line(mon, x, y, barSize, bar_color) --progress so far
+return best
 end
 
 
-function clear(mon)
-  term.clear()
-  term.setCursorPos(1,1)
-  mon.monitor.setBackgroundColor(colors.black)
-  mon.monitor.clear()
-  mon.monitor.setCursorPos(1,1)
+-- Prepara el monitor
+function ui.bindMonitor(mon, scale)
+scale = scale or 0.5
+mon.setTextScale(scale)
+mon.setBackgroundColor(colors.black)
+mon.setTextColor(colors.white)
+mon.clear()
 end
+
+
+-- Centra texto horizontalmente en la fila y
+function ui.centered(y, text)
+local w, _ = term.getSize()
+local x = math.max(1, math.floor((w - #tostring(text)) / 2) + 1)
+term.setCursorPos(x, y)
+term.write(tostring(text))
+end
+
+
+-- Rellena rectángulo
+function ui.fill(x, y, w, h, bg)
+bg = bg or colors.black
+local prev = term.getBackgroundColor()
+term.setBackgroundColor(bg)
+local row = string.rep(" ", math.max(0, w))
+for i = 0, math.max(0, h - 1) do
+term.setCursorPos(x, y + i)
+term.write(row)
+end
+term.setBackgroundColor(prev)
+end
+
+
+-- Barra de porcentaje 0..100
+function ui.bar(x, y, w, h, pct, label, colFill, colBg)
+pct = tonumber(pct) or 0
+if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+colFill = colFill or colors.green
+colBg = colBg or colors.gray
+local filled = math.floor(w * pct / 100)
+if filled > 0 then ui.fill(x, y, filled, h, colFill) end
+if filled < w then ui.fill(x + filled, y, w - filled, h, colBg) end
+if label then
+local txt = string.format("%s: %d%%", label, math.floor(pct))
+ui.centered(y + math.floor(h/2), txt)
+end
+end
+
+
+-- Botón
+function ui.button(x, y, w, h, label, active)
+local bg = active and colors.blue or colors.gray
+ui.fill(x, y, w, h, bg)
+term.setTextColor(colors.white)
+ui.centered(y + math.floor(h/2), tostring(label))
+end
+
+
+-- Área clicable de un botón (x<=tx<x+w, y<=ty<y+h)
+function ui.hit(btn, tx, ty)
+return tx >= btn.x and tx < btn.x + btn.w and ty >= btn.y and ty < btn.y + btn.h
+end
+
+
+-- Formato abreviado: 1.2k, 3.4M, 5.6B
+function ui.nfmt(n)
+n = tonumber(n) or 0
+local a = math.abs(n)
+if a >= 1000000000 then
+return string.format("%.2fB", n / 1000000000)
+elseif a >= 1000000 then
+return string.format("%.2fM", n / 1000000)
+elseif a >= 1000 then
+return string.format("%.2fk", n / 1000)
+else
+return tostring(math.floor(n))
+end
+end
+
+
+return ui
