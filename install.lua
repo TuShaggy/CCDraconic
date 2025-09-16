@@ -1,5 +1,5 @@
 -- install.lua — descarga TODO el repo TuShaggy/CCDraconic manteniendo carpetas
--- Evita el error de "más ends" y añade cabeceras para el API de GitHub.
+-- Usa la API de GitHub y baja todos los archivos respetando estructura
 
 local REPO_USER = "TuShaggy"
 local REPO_NAME = "CCDraconic"
@@ -11,8 +11,8 @@ local RAW_BASE = "https://raw.githubusercontent.com/"..REPO_USER.."/"..REPO_NAME
 local HEADERS = { ["User-Agent"] = "CC-Tweaked" }
 
 local function ensureDir(path)
-  local parts, i = {}, 0
-  for part in string.gmatch(path, "[^/]+") do parts[#parts+1] = part end
+  local parts = {}
+  for part in string.gmatch(path, "[^/]+") do table.insert(parts, part) end
   if #parts > 1 then
     local dir = table.concat(parts, "/", 1, #parts-1)
     if not fs.exists(dir) then fs.makeDir(dir) end
@@ -21,11 +21,11 @@ end
 
 print("Consultando árbol del repo…")
 local res = http.get(API_URL, HEADERS)
-if not res then error("No se pudo acceder al API de GitHub (http.get falló)") end
+if not res then error("No se pudo acceder al API de GitHub") end
 local body = res.readAll() res.close()
 local ok, json = pcall(textutils.unserializeJSON, body)
 if not ok or not json or not json.tree then
-  error("Respuesta del API inválida. Intenta más tarde.")
+  error("Respuesta del API inválida")
 end
 
 local count, failed = 0, 0
@@ -49,4 +49,4 @@ for _, item in ipairs(json.tree) do
 end
 
 print("Instalación terminada: "..count.." archivos, "..failed.." fallos.")
-print("Reinicia con `reboot`. Si no aparece el HUD, ejecuta `drmon.lua`."
+print("Reinicia con `reboot` o ejecuta `drmon.lua`.")
