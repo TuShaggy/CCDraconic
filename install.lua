@@ -1,44 +1,54 @@
--- install.lua dinámico — descarga todos los archivos de TuShaggy/CCDraconic
+```lua
+-- install.lua — descarga TODO el repo TuShaggy/CCDraconic manteniendo carpetas
+-- Evita el error de "más ends" y añade cabeceras para el API de GitHub.
 
-local repoUser = "TuShaggy"
-local repoName = "CCDraconic"
-local branch   = "main"
+local REPO_USER = "TuShaggy"
+local REPO_NAME = "CCDraconic"
+local BRANCH    = "main"
 
-local api = "https://api.github.com/repos/"..repoUser.."/"..repoName.."/git/trees/"..branch.."?recursive=1"
-local rawBase = "https://raw.githubusercontent.com/"..repoUser.."/"..repoName.."/"..branch.."/"
+local API_URL  = "https://api.github.com/repos/"..REPO_USER.."/"..REPO_NAME.."/git/trees/"..BRANCH.."?recursive=1"
+local RAW_BASE = "https://raw.githubusercontent.com/"..REPO_USER.."/"..REPO_NAME.."/"..BRANCH.."/"
+
+local HEADERS = { ["User-Agent"] = "CC-Tweaked" }
 
 local function ensureDir(path)
-  local parts = {}
-  for part in string.gmatch(path, "[^/]+") do table.insert(parts, part) end
-  table.remove(parts) -- quitamos el archivo
-  if #parts > 0 then
-    local dir = table.concat(parts, "/")
+  local parts, i = {}, 0
+  for part in string.gmatch(path, "[^/]+") do parts[#parts+1] = part end
+  if #parts > 1 then
+    local dir = table.concat(parts, "/", 1, #parts-1)
     if not fs.exists(dir) then fs.makeDir(dir) end
   end
 end
 
-print("Consultando archivos en GitHub...")
-local res = http.get(api)
-if not res then error("No se pudo acceder al API de GitHub") end
-local json = textutils.unserializeJSON(res.readAll())
-res.close()
+print("Consultando árbol del repo…")
+local res = http.get(API_URL, HEADERS)
+if not res then error("No se pudo acceder al API de GitHub (http.get falló)") end
+local body = res.readAll() res.close()
+local ok, json = pcall(textutils.unserializeJSON, body)
+if not ok or not json or not json.tree then
+  error("Respuesta del API inválida. Intenta más tarde.")
+end
 
+local count, failed = 0, 0
 for _, item in ipairs(json.tree) do
   if item.type == "blob" then
-    local url = rawBase .. item.path
+    local url = RAW_BASE .. item.path
     ensureDir(item.path)
-    print("Descargando "..item.path)
-    local h = http.get(url)
+    write("Descargando "..item.path.." … ")
+    local h = http.get(url, HEADERS)
     if h then
-      local data = h.readAll()
-      h.close()
+      local data = h.readAll() h.close()
       local f = fs.open(item.path, "w")
-      f.write(data)
-      f.close()
+      f.write(data) f.close()
+      print("OK")
+      count = count + 1
     else
-      print("  Error al descargar "..url)
+      print("ERROR")
+      failed = failed + 1
     end
   end
 end
 
-print("Instalación completa. Reinicia con `reboot`.")
+print("Instalación terminada: "..count.." archivos, "..failed.." fallos.")
+print("Reinicia con `reboot`. Si no aparece el HUD, ejecuta `drmon.lua`.")
+```
