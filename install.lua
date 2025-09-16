@@ -49,5 +49,4 @@ for _, item in ipairs(json.tree) do
 end
 
 print("Instalación terminada: "..count.." archivos, "..failed.." fallos.")
-print("Reinicia con `reboot`. Si no aparece el HUD, ejecuta `drmon.lua`.")
-```
+print("Reinicia con `reboot`. Si no aparece el HUD, ejecuta `drmon.lua`."
