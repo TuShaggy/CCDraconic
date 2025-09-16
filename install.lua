@@ -22,7 +22,7 @@ end
 print("Consultando árbol del repo…")
 local res = http.get(API_URL, HEADERS)
 if not res then error("No se pudo acceder al API de GitHub")
-local body = res.readAll() res.close()
+local body = res.readAll() res.close()end
 local ok, json = pcall(textutils.unserializeJSON, body)
 if not ok or not json or not json.tree then
   error("Respuesta del API inválida")
