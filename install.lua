@@ -21,7 +21,7 @@ end
 
 print("Consultando árbol del repo…")
 local res = http.get(API_URL, HEADERS)
-if not res then error("No se pudo acceder al API de GitHub") end
+if not res then error("No se pudo acceder al API de GitHub")
 local body = res.readAll() res.close()
 local ok, json = pcall(textutils.unserializeJSON, body)
 if not ok or not json or not json.tree then
@@ -46,6 +46,6 @@ for _, item in ipairs(json.tree) do
       failed = failed + 1
     end
   end
-
+end
 print("Instalación terminada: "..count.." archivos, "..failed.." fallos.")
 print("Reinicia con `reboot` o ejecuta `drmon.lua`.")
