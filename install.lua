@@ -1,4 +1,4 @@
-```lua
+
 -- install.lua — descarga TODO el repo TuShaggy/CCDraconic manteniendo carpetas
 -- Evita el error de "más ends" y añade cabeceras para el API de GitHub.
 
