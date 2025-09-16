@@ -22,7 +22,6 @@ btn.x, btn.y, btn.w, btn.h = x, by, bwBtn, 3
 ui.button(btn.x, btn.y, btn.w, btn.h, btn.label, btn.toggle and state.auto)
 x = x + bwBtn
 end
-end
 
 
 -- ======================
