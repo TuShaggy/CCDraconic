@@ -46,7 +46,6 @@ for _, item in ipairs(json.tree) do
       failed = failed + 1
     end
   end
-end
 
 print("Instalación terminada: "..count.." archivos, "..failed.." fallos.")
 print("Reinicia con `reboot` o ejecuta `drmon.lua`.")
